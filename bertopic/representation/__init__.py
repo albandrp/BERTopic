@@ -3,6 +3,7 @@ from bertopic.representation._cohere import Cohere
 from bertopic.representation._base import BaseRepresentation
 from bertopic.representation._keybert import KeyBERTInspired
 from bertopic.representation._mmr import MaximalMarginalRelevance
+from bertopic.representation._concepts import SparseConceptRepresentation
 
 
 # Llama CPP Generator
@@ -70,6 +71,7 @@ __all__ = [
     "MaximalMarginalRelevance",
     "OpenAI",
     "PartOfSpeech",
+    "SparseConceptRepresentation",
     "TextGeneration",
     "VisualRepresentation",
     "ZeroShotClassification",
