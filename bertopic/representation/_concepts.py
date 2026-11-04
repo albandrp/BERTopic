@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from importlib.resources import files
 from scipy.sparse import csr_matrix
 from typing import Any, List, Mapping, Tuple
 from sklearn.decomposition import sparse_encode
@@ -30,9 +31,11 @@ class SparseConceptRepresentation(BaseRepresentation):
     embeddings that were clustered.
 
     Arguments:
-        vocabulary: The concepts to decompose images into. Single-word concepts
-                    are advised since multi-word concepts are split into separate
-                    tokens by the vectorizer.
+        vocabulary: The concepts to decompose images into. If None, the 3,000 most
+                    frequent words of SpLiCE's MS-COCO vocabulary are used, which
+                    are shipped with BERTopic. Single-word concepts are advised
+                    since multi-word concepts are split into separate tokens by
+                    the vectorizer.
         embedding_model: The CLIP model used to embed the images. It is used to
                          embed the `vocabulary` with its text encoder. Can be any
                          embedding model supported by BERTopic, such as
@@ -56,13 +59,19 @@ class SparseConceptRepresentation(BaseRepresentation):
     from bertopic.representation import SparseConceptRepresentation
 
     embedding_model = MultiModalBackend("clip-ViT-B-32")
+    representation_model = SparseConceptRepresentation(embedding_model=embedding_model)
+
+    topic_model = BERTopic(embedding_model=embedding_model, representation_model=representation_model)
+    topics, probs = topic_model.fit_transform(documents=None, images=images)
+    ```
+
+    You can also pass your own concepts, for example to focus on a specific domain:
+
+    ```python
     representation_model = SparseConceptRepresentation(
         vocabulary=["dog", "cat", "beach", "snow", ...],
         embedding_model=embedding_model,
     )
-
-    topic_model = BERTopic(embedding_model=embedding_model, representation_model=representation_model)
-    topics, probs = topic_model.fit_transform(documents=None, images=images)
     ```
 
     Reference:
@@ -72,7 +81,7 @@ class SparseConceptRepresentation(BaseRepresentation):
 
     def __init__(
         self,
-        vocabulary: List[str],
+        vocabulary: List[str] | None = None,
         embedding_model: Any = None,
         concept_embeddings: np.ndarray = None,
         l1_penalty: float = 0.25,
@@ -82,6 +91,8 @@ class SparseConceptRepresentation(BaseRepresentation):
     ):
         if embedding_model is None and concept_embeddings is None:
             raise ValueError("Please pass either an `embedding_model` or `concept_embeddings`.")
+        if vocabulary is None:
+            vocabulary = load_default_vocabulary()
         if concept_embeddings is not None and len(concept_embeddings) != len(vocabulary):
             raise ValueError("`concept_embeddings` should have one row per concept in `vocabulary`.")
 
@@ -167,3 +178,9 @@ class SparseConceptRepresentation(BaseRepresentation):
         dictionary = normalize(self.concept_embeddings)
         dictionary = normalize(dictionary - dictionary.mean(axis=0))
         return dictionary
+
+
+def load_default_vocabulary() -> List[str]:
+    """Load the 3,000 most frequent words of SpLiCE's MS-COCO vocabulary, most frequent first."""
+    text = files("bertopic.representation").joinpath("_concepts_mscoco.txt").read_text(encoding="utf-8")
+    return [line for line in text.splitlines() if line and not line.startswith("#")]

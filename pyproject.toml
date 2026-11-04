@@ -101,6 +101,9 @@ Repository = "https://github.com/MaartenGr/BERTopic.git"
 include = ["bertopic*"]
 exclude = ["tests"]
 
+[tool.setuptools.package-data]
+"bertopic.representation" = ["*.txt"]
+
 [tool.ruff]
 line-length = 120
 

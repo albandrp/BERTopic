@@ -7,6 +7,7 @@ from sklearn.preprocessing import normalize
 from bertopic import BERTopic
 from bertopic.dimensionality import BaseDimensionalityReduction
 from bertopic.representation import SparseConceptRepresentation
+from bertopic.representation._concepts import load_default_vocabulary
 
 
 N_CONCEPTS, DIM = 50, 64
@@ -94,3 +95,12 @@ def test_requires_embeddings_or_model():
         SparseConceptRepresentation(["dog", "cat"])
     with pytest.raises(ValueError):
         SparseConceptRepresentation(["dog", "cat"], concept_embeddings=np.zeros((3, 4)))
+
+
+def test_default_vocabulary():
+    vocabulary = load_default_vocabulary()
+    assert len(vocabulary) == len(set(vocabulary)) == 3000
+    assert vocabulary[:3] == ["a", "on", "of"]
+
+    model = SparseConceptRepresentation(concept_embeddings=np.zeros((3000, 4)))
+    assert model.vocabulary.tolist() == vocabulary
